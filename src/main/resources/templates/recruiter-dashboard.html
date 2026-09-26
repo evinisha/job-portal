@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Recruiter Dashboard</title>
+
+    <link rel="stylesheet" href="/style.css?v=2">
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <div class="dashboard-header">
+
+        <div>
+            <h1>Recruiter Dashboard</h1>
+            <p>Manage your job postings</p>
+        </div>
+
+        <button onclick="logout()">Logout</button>
+
+    </div>
+
+
+    <div class="job-card">
+
+        <h2>Add New Job</h2>
+
+        <form id="jobForm">
+
+            <input
+                    type="text"
+                    id="title"
+                    placeholder="Job Title"
+                    required
+            >
+
+            <input
+                    type="text"
+                    id="company"
+                    placeholder="Company"
+                    required
+            >
+
+            <input
+                    type="text"
+                    id="location"
+                    placeholder="Location"
+                    required
+            >
+
+            <input
+                    type="number"
+                    id="salary"
+                    placeholder="Salary"
+                    required
+            >
+
+            <textarea
+                    id="description"
+                    placeholder="Job Description"
+                    required
+            ></textarea>
+
+            <button type="submit">
+                Add Job
+            </button>
+
+        </form>
+
+        <p id="message"></p>
+
+    </div>
+
+
+    <h2>My Job Postings</h2>
+
+    <div id="jobsContainer"></div>
+
+</div>
+
+
+<script>
+
+    document.getElementById("jobForm").addEventListener(
+        "submit",
+        async function(event) {
+
+            event.preventDefault();
+
+            const user = JSON.parse(
+                localStorage.getItem("user")
+            );
+
+            if (!user) {
+                window.location.href = "/login";
+                return;
+            }
+
+            const job = {
+
+                title: document.getElementById("title").value,
+
+                company: document.getElementById("company").value,
+
+                location: document.getElementById("location").value,
+
+                salary: Number(
+                    document.getElementById("salary").value
+                ),
+
+                description:
+                document.getElementById("description").value,
+
+                recruiter_id: user.id
+            };
+            const editingId =
+                document.getElementById("jobForm").dataset.editingId;
+
+
+
+            let response;
+
+            if (editingId) {
+
+                response = await fetch(
+                    "/api/jobs/" + editingId,
+                    {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(job)
+                    }
+                );
+
+            } else {
+
+                response = await fetch("/api/jobs", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(job)
+                });
+
+            }
+
+
+            const result = await response.text();
+
+            document.getElementById("message").textContent = result;
+
+            document.getElementById("jobForm").reset();
+            delete document.getElementById("jobForm").dataset.editingId;
+
+            document.getElementById("jobForm")
+                .querySelector("button").textContent = "Add Job";
+
+            loadJobs();
+
+        }
+    );
+
+
+    async function loadJobs() {
+
+        const user = JSON.parse(
+            localStorage.getItem("user")
+        );
+
+        if (!user) {
+            window.location.href = "/login";
+            return;
+        }
+
+        const response = await fetch(
+            "/api/jobs/recruiter/" + user.id
+        );
+
+        const jobs = await response.json();
+
+
+        displayJobs(jobs);
+    }
+
+
+    function displayJobs(jobs) {
+
+        const container =
+            document.getElementById("jobsContainer");
+
+        container.innerHTML = "";
+
+        jobs.forEach(function(job) {
+
+            const card = document.createElement("div");
+
+            card.className = "job-card";
+
+            card.innerHTML = `
+
+    <h3>${job.title}</h3>
+
+    <p>
+        <strong>Company:</strong>
+        ${job.company}
+    </p>
+
+    <p>
+        <strong>Location:</strong>
+        ${job.location}
+    </p>
+
+    <p>
+        <strong>Salary:</strong>
+        ₹${job.salary}
+    </p>
+
+    <p>
+        ${job.description}
+    </p>
+
+    <button onclick="editJob(${job.id})">
+        Edit
+    </button>
+
+    <button onclick="deleteJob(${job.id})">
+        Delete
+    </button>
+    <button onclick="viewApplicants(${job.id})">
+    View Applicants
+    </button>
+
+`;
+
+            container.appendChild(card);
+
+        });
+    }
+
+    async function deleteJob(jobId) {
+
+        const confirmDelete =
+            confirm("Are you sure you want to delete this job?");
+
+        if (!confirmDelete) {
+            return;
+        }
+
+        const response = await fetch(
+            "/api/jobs/" + jobId,
+            {
+                method: "DELETE"
+            }
+        );
+
+        const result = await response.text();
+
+        alert(result);
+
+        loadJobs();
+    }
+    function viewApplicants(jobId) {
+
+        window.location.href =
+            "/applicants?jobId=" + jobId;
+
+    }
+    async function editJob(jobId) {
+
+        const response = await fetch("/api/jobs/" + jobId);
+
+        const job = await response.json();
+
+        document.getElementById("title").value = job.title;
+        document.getElementById("company").value = job.company;
+        document.getElementById("location").value = job.location;
+        document.getElementById("salary").value = job.salary;
+        document.getElementById("description").value = job.description;
+
+        document.getElementById("jobForm").dataset.editingId = jobId;
+
+        document.getElementById("jobForm").querySelector("button").textContent =
+            "Update Job";
+
+    }
+
+
+    function logout() {
+
+        localStorage.removeItem("user");
+
+        window.location.href = "/login";
+
+    }
+
+
+    loadJobs();
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Job Portal - Register</title>
+
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+<div class="login-container">
+
+    <div class="login-box">
+
+        <h1>Job Portal</h1>
+
+        <p class="subtitle">Create your account</p>
+
+        <form id="registerForm">
+
+            <label>Name</label>
+            <input type="text"
+                   id="name"
+                   placeholder="Enter your name"
+                   required>
+
+            <label>Email</label>
+            <input type="email"
+                   id="email"
+                   placeholder="Enter your email"
+                   required>
+
+            <label>Password</label>
+            <input type="password"
+                   id="password"
+                   placeholder="Enter your password"
+                   required>
+
+            <label>Role</label>
+            <select id="role" required>
+                <option value="">Select your role</option>
+                <option value="JOB_SEEKER">Job Seeker</option>
+                <option value="RECRUITER">Recruiter</option>
+            </select>
+
+            <button type="submit">Register</button>
+
+        </form>
+
+        <p id="message"></p>
+
+        <p class="register-text">
+            Already have an account?
+            <a href="/login">Login</a>
+        </p>
+
+    </div>
+
+</div>
+
+<script>
+
+    document.getElementById("registerForm").addEventListener("submit", async function(event) {
+
+        event.preventDefault();
+
+        const name = document.getElementById("name").value;
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        const role = document.getElementById("role").value;
+
+        const message = document.getElementById("message");
+
+        try {
+
+            const response = await fetch("/api/users/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    name: name,
+                    email: email,
+                    password: password,
+                    role: role
+                })
+            });
+
+            const result = await response.text();
+
+            if (result === "User registered successfully!") {
+
+                message.textContent = "Registration successful!";
+                message.style.color = "green";
+
+                setTimeout(function() {
+                    window.location.href = "/login";
+                }, 1500);
+
+            } else {
+
+                message.textContent = result;
+                message.style.color = "red";
+            }
+
+        } catch (error) {
+
+            message.textContent = "Something went wrong!";
+            message.style.color = "red";
+
+            console.error(error);
+        }
+
+    });
+
+</script>
+
+</body>
+</html>

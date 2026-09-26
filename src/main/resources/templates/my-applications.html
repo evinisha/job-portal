@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>My Applications</title>
+
+    <link rel="stylesheet" href="/style.css?v=2">
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <h1>My Applications</h1>
+
+    <button onclick="goBack()">← Back to Jobs</button>
+
+    <div id="applicationsContainer"></div>
+
+</div>
+
+
+<script>
+
+    async function loadApplications() {
+
+        const user = JSON.parse(localStorage.getItem("user"));
+
+        if (!user) {
+            window.location.href = "/login";
+            return;
+        }
+
+        try {
+
+            const response = await fetch(
+                "/api/applications/user/" + user.id
+            );
+
+            const applications = await response.json();
+
+            displayApplications(applications);
+
+        } catch (error) {
+
+            console.error(error);
+
+            document.getElementById("applicationsContainer").innerHTML =
+                "<p>Unable to load applications.</p>";
+        }
+    }
+
+
+    function displayApplications(applications) {
+
+        const container =
+            document.getElementById("applicationsContainer");
+
+        container.innerHTML = "";
+
+        if (applications.length === 0) {
+
+            container.innerHTML =
+                "<p>You have not applied for any jobs yet.</p>";
+
+            return;
+        }
+
+        applications.forEach(function(application) {
+
+            const card = document.createElement("div");
+
+            card.className = "job-card";
+
+            card.innerHTML = `
+            <h3>${application.title}</h3>
+
+            <p>
+                <strong>Company:</strong>
+                ${application.company}
+            </p>
+
+            <p>
+                <strong>Applied Date:</strong>
+                ${application.applied_date}
+            </p>
+
+            <p>
+                <strong>Status:</strong>
+                ${application.status}
+            </p>
+        `;
+
+            container.appendChild(card);
+
+        });
+    }
+
+
+    function goBack() {
+
+        window.location.href = "/jobseeker-dashboard";
+
+    }
+
+
+    loadApplications();
+
+</script>
+
+</body>
+</html>

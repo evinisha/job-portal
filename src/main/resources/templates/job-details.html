@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Job Details</title>
+
+    <link rel="stylesheet" href="/style.css?v=2">
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <button onclick="goBack()">
+        ← Back to Jobs
+    </button>
+
+    <div id="jobContainer"></div>
+
+</div>
+
+
+<script>
+
+    async function loadJob() {
+
+        const params = new URLSearchParams(
+            window.location.search
+        );
+
+        const jobId = params.get("id");
+
+        if (!jobId) {
+            document.getElementById("jobContainer").innerHTML =
+                "<p>Job not found.</p>";
+            return;
+        }
+
+        try {
+
+            const response = await fetch(
+                "/api/jobs/" + jobId
+            );
+
+            if (!response.ok) {
+                document.getElementById("jobContainer").innerHTML =
+                    "<p>Job not found.</p>";
+                return;
+            }
+
+            const job = await response.json();
+
+            displayJob(job);
+
+        } catch (error) {
+
+            console.error(error);
+
+            document.getElementById("jobContainer").innerHTML =
+                "<p>Unable to load job details.</p>";
+        }
+    }
+
+
+    function displayJob(job) {
+
+        const container =
+            document.getElementById("jobContainer");
+
+        container.innerHTML = `
+
+        <div class="job-card">
+
+            <h1>${job.title}</h1>
+
+            <p>
+                <strong>Company:</strong>
+                ${job.company}
+            </p>
+
+            <p>
+                <strong>Location:</strong>
+                ${job.location}
+            </p>
+
+            <p>
+                <strong>Salary:</strong>
+                ₹${job.salary}
+            </p>
+
+            <hr>
+
+            <h3>Job Description</h3>
+
+            <p>
+                ${job.description}
+            </p>
+
+            <button onclick="applyForJob(${job.id})">
+                Apply for this Job
+            </button>
+
+        </div>
+
+    `;
+    }
+
+
+    async function applyForJob(jobId) {
+
+        const user = JSON.parse(
+            localStorage.getItem("user")
+        );
+
+        if (!user) {
+
+            alert("Please login first.");
+
+            window.location.href = "/login";
+
+            return;
+        }
+
+        const response = await fetch(
+            "/api/applications",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    job_id: jobId,
+                    user_id: user.id
+                })
+            }
+        );
+
+        const result = await response.text();
+
+        alert(result);
+    }
+
+
+    function goBack() {
+
+        window.location.href =
+            "/jobseeker-dashboard";
+
+    }
+
+
+    loadJob();
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Job Portal - Jobs</title>
+
+    <link rel="stylesheet" href="/style.css?v=2"></head>
+
+<body>
+
+
+<div class="dashboard">
+
+    <h1>Job Portal</h1>
+
+    <div class="dashboard-header">
+
+        <div>
+            <h2 id="welcomeMessage">Welcome 👋</h2>
+            <p>Find your next opportunity</p>
+        </div>
+
+        <div>
+            <button onclick="viewApplications()">
+                My Applications
+            </button>
+
+            <button onclick="logout()">
+                Logout
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Search -->
+    <div class="search-box">
+
+        <input
+                type="text"
+                id="searchInput"
+                placeholder="Search jobs..."
+        >
+
+        <button onclick="searchJobs()">Search</button>
+
+        <button onclick="loadJobs()">Show All</button>
+
+    </div>
+
+    <!-- Jobs will appear here -->
+    <div id="jobsContainer"></div>
+
+</div>
+
+<script>
+
+
+    const user = JSON.parse(
+        localStorage.getItem("user")
+    );
+
+    if (user) {
+
+        document.getElementById("welcomeMessage").textContent =
+            "Welcome, " + user.name + " 👋";
+
+    }
+    async function loadJobs() {
+
+        try {
+
+            const response = await fetch("/api/jobs");
+
+            const jobs = await response.json();
+
+            displayJobs(jobs);
+
+        } catch (error) {
+
+            console.error(error);
+
+            document.getElementById("jobsContainer").innerHTML =
+                "<p>Unable to load jobs.</p>";
+        }
+    }
+
+
+    function displayJobs(jobs) {
+
+        const container = document.getElementById("jobsContainer");
+
+        container.innerHTML = "";
+
+        if (jobs.length === 0) {
+
+            container.innerHTML = "<p>No jobs found.</p>";
+
+            return;
+        }
+
+        jobs.forEach(function(job) {
+
+            const jobCard = document.createElement("div");
+
+            jobCard.className = "job-card";
+
+            jobCard.innerHTML = `
+            <h3>${job.title}</h3>
+
+            <p><strong>Company:</strong> ${job.company}</p>
+
+            <p><strong>Location:</strong> ${job.location}</p>
+
+            <p><strong>Salary:</strong> ₹${job.salary}</p>
+
+            <p>${job.description}</p>
+
+            <button onclick="viewJob(${job.id})">
+            View Details
+            </button>
+
+            <button onclick="applyForJob(${job.id})">
+                Apply
+            </button>
+        `;
+
+            container.appendChild(jobCard);
+
+        });
+    }
+
+
+    async function searchJobs() {
+
+        const keyword =
+            document.getElementById("searchInput").value;
+
+        if (keyword.trim() === "") {
+
+            loadJobs();
+
+            return;
+        }
+
+        try {
+
+            const response = await fetch(
+                "/api/jobs/search?keyword=" +
+                encodeURIComponent(keyword)
+            );
+
+            const jobs = await response.json();
+
+            displayJobs(jobs);
+
+        } catch (error) {
+
+            console.error(error);
+        }
+    }
+
+
+    async function applyForJob(jobId) {
+
+        const user =
+            JSON.parse(localStorage.getItem("user"));
+
+        if (!user) {
+
+            alert("Please login first.");
+
+            window.location.href = "/login";
+
+            return;
+        }
+
+        const response = await fetch("/api/applications", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                job_id: jobId,
+                user_id: user.id
+            })
+
+        });
+
+        const result = await response.text();
+
+        alert(result);
+    }
+    function viewJob(jobId) {
+
+        window.location.href =
+            "/job-details?id=" + jobId;
+
+    }
+
+
+    function logout() {
+
+        localStorage.removeItem("user");
+
+        window.location.href = "/login";
+    }
+
+
+    // Load jobs when page opens
+    loadJobs();
+
+    function viewApplications() {
+        window.location.href = "/my-applications";
+    }
+
+
+</script>
+
+</body>
+</html>
